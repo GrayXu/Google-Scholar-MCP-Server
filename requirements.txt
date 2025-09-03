@@ -1,4 +1,4 @@
 requests
 bs4 
-mcp 
+mcp[cli]>=1.4.1 
 scholarly

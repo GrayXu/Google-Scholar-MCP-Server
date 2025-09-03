@@ -11,157 +11,94 @@ The Google Scholar MCP Server provides a bridge between AI assistants and Google
 - 👤 Author Information: Retrieve detailed information about authors ✅
 - 📊 Research Support: Facilitate academic research and analysis ✅
 
-## 🚀 Quick Start
+---
 
-### Installing Manually
-### Installing via Smithery
+## 🚀 Quick Start & Setup Guide
 
-To install google-scholar Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@JackKuo666/google-scholar-mcp-server):
+This guide provides a reliable, step-by-step process to set up and run this server, especially on systems like Ubuntu where the default Python version may be older than the required Python 3.10+.
 
-#### claude
+This process uses `pyenv` to manage Python versions, which avoids altering your system's default Python installation, making it a safe and non-destructive method.
 
-```sh
-npx -y @smithery/cli@latest install @JackKuo666/google-scholar-mcp-server --client claude --config "{}"
-```
+### Step 1: Clone the Repository
 
-#### Cursor
-
-Paste the following into Settings → Cursor Settings → MCP → Add new server: 
-- Mac/Linux  
-```s
-npx -y @smithery/cli@latest run @JackKuo666/google-scholar-mcp-server --client cursor --config "{}" 
-```
-#### Windsurf
-```sh
-npx -y @smithery/cli@latest install @JackKuo666/google-scholar-mcp-server --client windsurf --config "{}"
-```
-### CLine
-```sh
-npx -y @smithery/cli@latest install @JackKuo666/google-scholar-mcp-server --client cline --config "{}"
-```
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/JackKuo666/google-scholar-MCP-Server.git
-   cd google-scholar-MCP-Server
-   ```
-
-2. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-
-For development:
-
+First, clone the project to your local machine:
 ```bash
-# Clone and set up development environment
 git clone https://github.com/JackKuo666/Google-Scholar-MCP-Server.git
 cd Google-Scholar-MCP-Server
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-
-# Install dependencies
-pip install -r requirements.txt
 ```
 
-## 📊 Usage
+### Step 2: Install and Configure `pyenv`
 
-Start the MCP server:
+`pyenv` allows us to install and use the required Python 3.10 without interfering with the system's default version.
+
+1.  **Install `pyenv`:**
+    ```bash
+    curl https://pyenv.run | bash
+    ```
+
+2.  **Configure your shell for `pyenv`:**
+    After installation, add the following lines to the end of your `~/.bashrc` file to ensure `pyenv` is loaded every time you open a terminal.
+    ```bash
+    export PYENV_ROOT="$HOME/.pyenv"
+    [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init - bash)"
+    ```
+    Then, restart your shell or run `source ~/.bashrc`.
+
+3.  **Install Python Build Dependencies:**
+    To compile and install Python versions with `pyenv`, you need to install some build dependencies first.
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git
+    ```
+
+4.  **Install Python 3.10:**
+    Now, from within the project directory, `pyenv` will automatically read the `.python-version` file and install the correct version (3.10.13).
+    ```bash
+    pyenv install
+    ```
+    This step will take a few minutes as it downloads and compiles the Python source code.
+
+### Step 3: Create a Startup Script
+
+The `uvx` command used to launch the server might not automatically use the Python version managed by `pyenv`. To solve this, we'll create a simple startup script that ensures the correct environment is used.
+
+Create a file named `run_server.sh` with the following content:
 
 ```bash
-python google_scholar_server.py
+#!/bin/bash
+set -e
+
+# Activate the pyenv environment
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+
+# Install/verify dependencies using the correct pip
+echo "--- Installing dependencies using Python $(python --version)... ---"
+pip install -r requirements.txt
+
+# Find the full path to the pyenv python executable
+PYTHON_EXEC=$(which python)
+echo "--- Starting server with Python executable: $PYTHON_EXEC ---"
+
+# Run the server command, providing the full path to the correct python
+uvx mcpo --port 8000 -- "$PYTHON_EXEC" google_scholar_server.py
 ```
 
-Once the server is running, you can use the provided MCP tools in your AI assistant or application. Here are some examples of how to use the tools:
+### Step 4: Run the Server
 
-### Example 1: Search for papers using keywords
+1.  **Make the script executable:**
+    ```bash
+    chmod +x run_server.sh
+    ```
 
-```python
-result = await mcp.use_tool("search_google_scholar_key_words", {
-    "query": "artificial intelligence ethics",
-    "num_results": 5
-})
-print(result)
-```
+2.  **Launch the server:**
+    ```bash
+    ./run_server.sh
+    ```
 
-### Example 2: Perform an advanced search
-
-```python
-result = await mcp.use_tool("search_google_scholar_advanced", {
-    "query": "machine learning",
-    "author": "Hinton",
-    "year_range": [2020, 2023],
-    "num_results": 3
-})
-print(result)
-```
-
-### Example 3: Get author information
-
-```python
-result = await mcp.use_tool("get_author_info", {
-    "author_name": "Geoffrey Hinton"
-})
-print(result)
-```
-
-These examples demonstrate how to use the three main tools provided by the Google Scholar MCP Server. Adjust the parameters as needed for your specific use case.
-
-## Usage with Claude Desktop
-
-Add this configuration to your `claude_desktop_config.json`:
-
-(Mac OS)
-
-```json
-{
-  "mcpServers": {
-    "google-scholar": {
-      "command": "python",
-      "args": ["-m", "google_scholar_mcp_server"]
-      }
-  }
-}
-```
-
-(Windows version):
-
-```json
-{
-  "mcpServers": {
-    "google-scholar": {
-      "command": "C:\\Users\\YOUR\\PATH\\miniconda3\\envs\\mcp_server\\python.exe",
-      "args": [
-        "D:\\code\\YOUR\\PATH\\Google-Scholar-MCP-Server\\google_scholar_server.py"
-      ],
-      "env": {},
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-Using with Cline
-```json
-{
-  "mcpServers": {
-    "google-scholar": {
-      "command": "bash",
-      "args": [
-        "-c",
-        "source /home/YOUR/PATH/.venv/bin/activate && python /home/YOUR/PATH/google_scholar_mcp_server.py"
-      ],
-      "env": {},
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-
+The server should now start successfully on port 8000, using the correct Python version and with all dependencies installed.
 
 ## 🛠 MCP Tools
 
@@ -197,33 +134,3 @@ Get detailed information about an author from Google Scholar.
 - `author_name` (str): Name of the author to search for
 
 **Returns:** Dictionary containing author information
-
-## 📁 Project Structure
-
-- `google_scholar_server.py`: The main MCP server implementation using FastMCP
-- `google_scholar_web_search.py`: Contains the web scraping logic for searching Google Scholar
-
-## 🔧 Dependencies
-
-- Python 3.10+
-- mcp[cli]>=1.4.1
-- scholarly>=1.7.0
-- asyncio>=3.4.3
-
-You can install the required dependencies using:
-
-```bash
-pip install -r requirements.txt
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## ⚠️ Disclaimer
-
-This tool is for research purposes only. Please respect Google Scholar's terms of service and use this tool responsibly.

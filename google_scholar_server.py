@@ -68,7 +68,11 @@ async def get_author_info(author_name: str) -> Dict[str, Any]:
     """
     try:
         search_query = scholarly.search_author(author_name)
-        author = await asyncio.to_thread(next, search_query)
+        author = await asyncio.to_thread(next, search_query, None)
+
+        if author is None:
+            return {"error": f"Author '{author_name}' not found."}
+            
         filled_author = await asyncio.to_thread(scholarly.fill, author)
         
         # Extract relevant information
